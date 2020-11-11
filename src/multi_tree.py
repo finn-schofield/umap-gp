@@ -39,7 +39,7 @@ def init_primitives(pset):
 
 
 def init_toolbox(toolbox, pset, crossover, n_trees):
-    creator.create("Individual", list, fitness=creator.FitnessMax, pset=pset)
+    creator.create("Individual", list, fitness=creator.FitnessMin, pset=pset)
 
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=0, max_=6)
     toolbox.register("tree", tools.initIterate, gp.PrimitiveTree, toolbox.expr)

@@ -20,10 +20,10 @@ from deap import gp
 from deap import base
 from deap import creator
 
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, silhouette_samples
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import mean_squared_error as MSE
 from sklearn.metrics import pairwise_distances
+
+from umap import UMAP
 
 from ea_simple_elitism import eaSimple
 
@@ -31,21 +31,22 @@ from selection import *
 
 from read_data import read_data
 
-POP_SIZE = 1024
+POP_SIZE = 100
 NGEN = 100
 CXPB = 0.8
 MUTPB = 0.2
 ELITISM = 10
-PARSIMONY = True
+PARSIMONY = False
 CMPLX = "nodes_total"  # complexity measure of individuals
 BCKT = no_bucketing  # bucketing used for lexicographic parsimony pressure
 BCKT_VAL = 5  # bucketing parameter
 REP = mt  # individual representation {mt (multi-tree) or vt (vector-tree)}
-MT_CX = "ric"  # crossover for multi-tree {'aic', 'ric', 'sic'}
-DATA_DIR = "/home/schofifinn/PycharmProjects/SSResearch/data"
+MT_CX = "sic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
+DATA_DIR = "/home/schofifinn/ss2020/umap-gp/data"
+N_DIMS = 2
 
 
-def evaluate(individual, toolbox, data, k, metric, distance_vector=None, labels_true=None, plot_sil=False):
+def evaluate(individual, toolbox, data, embedding, metric):
     """
     Evaluates an individuals fitness. The fitness is the clustering performance on the data
     using the specified metric.
@@ -53,48 +54,17 @@ def evaluate(individual, toolbox, data, k, metric, distance_vector=None, labels_
     :param individual: the individual to be evaluated
     :param toolbox: the evolutionary toolbox
     :param data: the data to be used to evaluate the individual
-    :param k: the number of clusters for k-means
-    :param metric: the metric to be used to evaluate clustering performance
-    :param distance_vector: a pre-computed distance vector, required for silhouette-pre metric
-    :param labels_true: the ground truth cluster labels, required for ari metric
+    :param embedding: the UMAP embedding to measure against
+    :param metric: the metric to be used to evaluate embedding difference
     :return: the fitness of the individual
     """
 
     X = REP.process_data(individual, toolbox, data)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        kmeans = KMeans(n_clusters=k, random_state=SEED, n_jobs=1).fit(X)
-        # optics = OPTICS().fit(X)
-    labels = kmeans.labels_
-    # labels = optics.labels_
-
-    # individuals that find single cluster are unfit
-    nlabels = len(set(labels))
-    if nlabels == 1:
-        return [-1]
-
-    # uses precomputed distances of original data to avoid trending towards single dimension when
-    # minimising silhouette.
-    if metric == 'silhouette_pre':
-        if distance_vector is None:
-            raise ValueError("Must provide distance vector for silhouette-pre metric.")
-        if plot_sil:
-            silhouette = silhouette_samples(distance_vector, labels, metric='precomputed')
-            plot_silhouette(silhouette, 'silhouette-pre')
-        return [silhouette_score(distance_vector, labels, metric='precomputed')]
-    elif metric == 'silhouette':
-        if plot_sil:
-            silhouette = silhouette_samples(X, labels)
-            plot_silhouette(silhouette, 'silhouette')
-        return [silhouette_score(X, labels, metric='euclidean')]
-    elif metric == 'ari':
-        if labels_true is None:
-            raise ValueError("Must provide ground truth labels for ARI")
-        return [adjusted_rand_score(labels_true, labels)]
-    elif metric == 'intra':
-        raise NotImplementedError("intra metric not implemented")
-        # return [-kmeans.inertia_]
+    if metric == 'spearmans':
+        return 1,
+    elif metric == "mse":
+        return MSE(embedding, X),
     else:
         raise Exception("invalid metric: {}".format(metric))
 
@@ -226,40 +196,40 @@ def init_stats():
     return stats
 
 
-def final_evaluation(best, data, labels, num_classes, toolbox, print_output=True):
-    """
-    Performs a final performance evaluation on an individual.
-
-    :param best: the individual to evaluate
-    :param data: the dataset associated with the individual
-    :param labels: the ground-truth labels of the dataset
-    :param num_classes: the number of classes of the dataset
-    :param toolbox: the evolutionary toolbox
-    :param print_output: whether or not to print output
-    :return: a dictionary of results, titles to values
-    """
-    kmeans = KMeans(n_clusters=num_classes, random_state=SEED).fit(data)
-    labels_pred = kmeans.labels_
-    baseline_ari = adjusted_rand_score(labels, labels_pred)
-    baseline_silhouette = silhouette_score(data, labels_pred, metric="euclidean")
-    silhouette = silhouette_samples(data, labels_pred)
-    # plot_silhouette(silhouette, 'baseline silhouette')
-
-    best_ari = evaluate(best, toolbox, data, num_classes, "ari", labels_true=labels)[0]
-    best_silhouette = evaluate(best, toolbox, data, num_classes, "silhouette")[0]
-    cfs = eval_complexity(best, "cf_count")
-    unique = eval_complexity(best, "unique_fts")
-    nodes = eval_complexity(best, "nodes_total")
-
-    if print_output:
-        print("\nConstructed features: %d" % cfs)
-        print("Unique features: %d\n" % unique)
-        print("Best ARI: %f \nBaseline ARI: %f\n" % (best_ari, baseline_ari))
-        print("Best silhouette: %f \nBaseline silhouette: %f" % (best_silhouette, baseline_silhouette))
-
-    return {"constructed-fts": cfs, "unique-fts": unique, "total-nodes": nodes, "best-ari": best_ari,
-            "base-ari": baseline_ari, "best-sil": best_silhouette,  "best-sil-pre": best.fitness.values[0],
-            "base-sil": baseline_silhouette}
+# def final_evaluation(best, data, labels, num_classes, toolbox, print_output=True):
+#     """
+#     Performs a final performance evaluation on an individual.
+#
+#     :param best: the individual to evaluate
+#     :param data: the dataset associated with the individual
+#     :param labels: the ground-truth labels of the dataset
+#     :param num_classes: the number of classes of the dataset
+#     :param toolbox: the evolutionary toolbox
+#     :param print_output: whether or not to print output
+#     :return: a dictionary of results, titles to values
+#     """
+#     kmeans = KMeans(n_clusters=num_classes, random_state=SEED).fit(data)
+#     labels_pred = kmeans.labels_
+#     baseline_ari = adjusted_rand_score(labels, labels_pred)
+#     baseline_silhouette = silhouette_score(data, labels_pred, metric="euclidean")
+#     silhouette = silhouette_samples(data, labels_pred)
+#     # plot_silhouette(silhouette, 'baseline silhouette')
+#
+#     best_ari = evaluate(best, toolbox, data, num_classes, "ari", labels_true=labels)[0]
+#     best_silhouette = evaluate(best, toolbox, data, num_classes, "silhouette")[0]
+#     cfs = eval_complexity(best, "cf_count")
+#     unique = eval_complexity(best, "unique_fts")
+#     nodes = eval_complexity(best, "nodes_total")
+#
+#     if print_output:
+#         print("\nConstructed features: %d" % cfs)
+#         print("Unique features: %d\n" % unique)
+#         print("Best ARI: %f \nBaseline ARI: %f\n" % (best_ari, baseline_ari))
+#         print("Best silhouette: %f \nBaseline silhouette: %f" % (best_silhouette, baseline_silhouette))
+#
+#     return {"constructed-fts": cfs, "unique-fts": unique, "total-nodes": nodes, "best-ari": best_ari,
+#             "base-ari": baseline_ari, "best-sil": best_silhouette,  "best-sil-pre": best.fitness.values[0],
+#             "base-sil": baseline_silhouette}
 
 
 def plot_stats(logbook):
@@ -298,6 +268,8 @@ def main(datafile, run_num):
     data = all_data["data"]
     labels = all_data["labels"]
 
+    umap_embedding = UMAP(n_components=N_DIMS).fit(data).embedding_
+
     num_classes = len(set(labels))
     print("%d classes found." % num_classes)
     distance_vector = pairwise_distances(data)
@@ -309,15 +281,14 @@ def main(datafile, run_num):
     pset.context["array"] = np.array
     REP.init_primitives(pset)
 
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
     # set up toolbox
     toolbox = base.Toolbox()
-    n_trees = min(num_classes // 2, num_features // 2)
-    init_toolbox(toolbox, pset, n_trees)
+    init_toolbox(toolbox, pset, N_DIMS)
 
-    toolbox.register("evaluate", evaluate, toolbox=toolbox, data=data, k=num_classes,
-                     metric='silhouette_pre', distance_vector=distance_vector)
+    toolbox.register("evaluate", evaluate, toolbox=toolbox, data=data,
+                     metric='mse', embedding=umap_embedding)
 
     pop = toolbox.population(n=POP_SIZE)
     hof = tools.HallOfFame(1)
@@ -331,10 +302,10 @@ def main(datafile, run_num):
         logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
 
     best = hof[0]
-    res = final_evaluation(best, data, labels, num_classes, toolbox)
-    # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
-    #          plot_sil=True)
-    write_ind_to_file(best, run_num, res)
+    # res = final_evaluation(best, data, labels, num_classes, toolbox)
+    # # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
+    # #          plot_sil=True)
+    # write_ind_to_file(best, run_num, res)
 
     return pop, stats, hof
 
