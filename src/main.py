@@ -32,7 +32,7 @@ from selection import *
 from read_data import read_data
 
 POP_SIZE = 100
-NGEN = 100
+NGEN = 500
 CXPB = 0.8
 MUTPB = 0.2
 ELITISM = 10
@@ -62,11 +62,18 @@ def evaluate(individual, toolbox, data, embedding, metric):
     X = REP.process_data(individual, toolbox, data)
 
     if metric == 'spearmans':
-        return 1,
+        return (1.0 - spearmans(embedding, X))/2.0,
     elif metric == "mse":
         return MSE(embedding, X),
     else:
         raise Exception("invalid metric: {}".format(metric))
+
+
+def spearmans(o1, o2):
+    d = np.abs(o1 - o2) ** 2
+    n = len(o1)
+    rho = 1 - (6 * d.sum() / (n * ((n ** 2) - 1)))
+    return rho
 
 
 def eval_complexity(individual, measure):
@@ -196,40 +203,43 @@ def init_stats():
     return stats
 
 
-# def final_evaluation(best, data, labels, num_classes, toolbox, print_output=True):
-#     """
-#     Performs a final performance evaluation on an individual.
-#
-#     :param best: the individual to evaluate
-#     :param data: the dataset associated with the individual
-#     :param labels: the ground-truth labels of the dataset
-#     :param num_classes: the number of classes of the dataset
-#     :param toolbox: the evolutionary toolbox
-#     :param print_output: whether or not to print output
-#     :return: a dictionary of results, titles to values
-#     """
-#     kmeans = KMeans(n_clusters=num_classes, random_state=SEED).fit(data)
-#     labels_pred = kmeans.labels_
-#     baseline_ari = adjusted_rand_score(labels, labels_pred)
-#     baseline_silhouette = silhouette_score(data, labels_pred, metric="euclidean")
-#     silhouette = silhouette_samples(data, labels_pred)
-#     # plot_silhouette(silhouette, 'baseline silhouette')
-#
-#     best_ari = evaluate(best, toolbox, data, num_classes, "ari", labels_true=labels)[0]
-#     best_silhouette = evaluate(best, toolbox, data, num_classes, "silhouette")[0]
-#     cfs = eval_complexity(best, "cf_count")
-#     unique = eval_complexity(best, "unique_fts")
-#     nodes = eval_complexity(best, "nodes_total")
-#
-#     if print_output:
-#         print("\nConstructed features: %d" % cfs)
-#         print("Unique features: %d\n" % unique)
-#         print("Best ARI: %f \nBaseline ARI: %f\n" % (best_ari, baseline_ari))
-#         print("Best silhouette: %f \nBaseline silhouette: %f" % (best_silhouette, baseline_silhouette))
-#
-#     return {"constructed-fts": cfs, "unique-fts": unique, "total-nodes": nodes, "best-ari": best_ari,
-#             "base-ari": baseline_ari, "best-sil": best_silhouette,  "best-sil-pre": best.fitness.values[0],
-#             "base-sil": baseline_silhouette}
+def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
+    """
+    Performs a final performance evaluation on an individual.
+
+    :param best: the individual to evaluate
+    :param data: the dataset associated with the individual
+    :param labels: the labels of the dataset
+    :param umap: umap embedding
+    :param toolbox: the evolutionary toolbox
+    :param print_output: whether or not to print output
+    :return: a dictionary of results, titles to values
+    """
+
+    X = REP.process_data(best, toolbox, data)
+
+    X_a, X_b = zip(*X)
+    plt.scatter(X_a, X_b, c=labels)
+    plt.title('GP')
+    plt.show()
+
+    X_a, X_b = zip(*umap.embedding_)
+    plt.scatter(X_a, X_b, c=labels)
+    plt.title('UMAP')
+    plt.show()
+    best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
+    best_mse = evaluate(best, toolbox, data, umap.embedding_, "mse")[0]
+
+    unique = eval_complexity(best, "unique_fts")
+    nodes = eval_complexity(best, "nodes_total")
+
+    if print_output:
+        print("Unique features: %d\n" % unique)
+        print("Best MSE: %f \n" % best_mse)
+        print("Best Spearmans: %f \n" % best_spearmans)
+
+    return {"unique-fts": unique, "total-nodes": nodes, "best-mse": best_mse,
+            "best-spearmans": best_spearmans}
 
 
 def plot_stats(logbook):
@@ -268,7 +278,7 @@ def main(datafile, run_num):
     data = all_data["data"]
     labels = all_data["labels"]
 
-    umap_embedding = UMAP(n_components=N_DIMS).fit(data).embedding_
+    umap = UMAP(n_components=N_DIMS, random_state=SEED).fit(data)
 
     num_classes = len(set(labels))
     print("%d classes found." % num_classes)
@@ -288,7 +298,7 @@ def main(datafile, run_num):
     init_toolbox(toolbox, pset, N_DIMS)
 
     toolbox.register("evaluate", evaluate, toolbox=toolbox, data=data,
-                     metric='mse', embedding=umap_embedding)
+                     metric='spearmans', embedding=umap.embedding_)
 
     pop = toolbox.population(n=POP_SIZE)
     hof = tools.HallOfFame(1)
@@ -297,15 +307,17 @@ def main(datafile, run_num):
 
     pop, logbook = eaSimple(pop, toolbox, CXPB, MUTPB, ELITISM, NGEN, stats, halloffame=hof, verbose=True)
 
-    for chapter in logbook.chapters:
-        logbook_df = pd.DataFrame(logbook.chapters[chapter])
-        logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
+    # TODO: re-implement outputting of run data
+
+    # for chapter in logbook.chapters:
+    #     logbook_df = pd.DataFrame(logbook.chapters[chapter])
+    #     logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
 
     best = hof[0]
-    # res = final_evaluation(best, data, labels, num_classes, toolbox)
-    # # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
-    # #          plot_sil=True)
-    # write_ind_to_file(best, run_num, res)
+    res = final_evaluation(best, data, labels, umap, toolbox)
+    # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
+    #          plot_sil=True)
+    write_ind_to_file(best, run_num, res)
 
     return pop, stats, hof
 

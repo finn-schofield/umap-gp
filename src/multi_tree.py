@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from scipy.special import expit
 
 from deap import gp, creator
 from deap import tools
@@ -33,6 +34,8 @@ def init_primitives(pset):
     pset.addPrimitive(protected_div, 2)
     pset.addPrimitive(np.maximum, 2)
     pset.addPrimitive(np.minimum, 2)
+    pset.addPrimitive(relu, 1)
+    pset.addPrimitive(sigmoid, 1)
     pset.addPrimitive(mt_if, 3)
 
     pset.addEphemeralConstant("rand", ephemeral=lambda: random.uniform(-1, 1))
@@ -99,6 +102,14 @@ def sub_abs(a, b):
 
 def mt_if(a, b, c):
     return np.where(a < 0, b, c)
+
+
+def sigmoid(x):
+    return expit(x)
+
+
+def relu(x):
+    return x * (x > 0)
 
 
 def protected_div(left, right):
