@@ -28,11 +28,12 @@ from umap import UMAP
 from ea_simple_elitism import eaSimple
 
 from selection import *
+from util.draw_individual import draw_individual
 
 from read_data import read_data
 
 POP_SIZE = 100
-NGEN = 500
+NGEN = 100
 CXPB = 0.8
 MUTPB = 0.2
 ELITISM = 10
@@ -235,6 +236,7 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
 
     if print_output:
         print("Unique features: %d\n" % unique)
+        print("Total nodes: %d\n" % nodes)
         print("Best MSE: %f \n" % best_mse)
         print("Best Spearmans: %f \n" % best_spearmans)
 
@@ -318,6 +320,7 @@ def main(datafile, run_num):
     # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
     #          plot_sil=True)
     write_ind_to_file(best, run_num, res)
+    draw_individual(best, datafile, run_type).draw("{}-best.png".format(run_num))
 
     return pop, stats, hof
 
