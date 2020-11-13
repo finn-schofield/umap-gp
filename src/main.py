@@ -33,7 +33,7 @@ from util.draw_individual import draw_individual
 from read_data import read_data
 
 POP_SIZE = 100
-NGEN = 100
+NGEN = 1000
 CXPB = 0.8
 MUTPB = 0.2
 ELITISM = 10
@@ -43,7 +43,7 @@ BCKT = no_bucketing  # bucketing used for lexicographic parsimony pressure
 BCKT_VAL = 5  # bucketing parameter
 REP = mt  # individual representation {mt (multi-tree) or vt (vector-tree)}
 MT_CX = "sic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
-DATA_DIR = "/home/schofifinn/ss2020/umap-gp/data"
+DATA_DIR = "../data"
 N_DIMS = 2
 
 
