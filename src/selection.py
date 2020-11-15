@@ -33,7 +33,7 @@ def selElitistAndTournament(individuals, k, tournsize, elitism):
 
 def parsimony_tournament(individuals, k, tournsize, toolbox):
         chosen = []
-        ordered = sorted(individuals, key=lambda x: x.fitness.values[0])
+        ordered = sorted(individuals, key=lambda x: -1.0 * x.fitness.values[0])
         buckets = toolbox.bucket(ordered)
 
         for i in range(k):

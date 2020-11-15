@@ -24,7 +24,7 @@ def process_data(individual, toolbox, data):
     return result.T
 
 
-def init_primitives(pset):
+def init_primitives(pset, use_ercs):
 
     pset.addPrimitive(np.add, 2)
     pset.addPrimitive(np.subtract, 2)
@@ -38,7 +38,8 @@ def init_primitives(pset):
     pset.addPrimitive(sigmoid, 1)
     pset.addPrimitive(mt_if, 3)
 
-    pset.addEphemeralConstant("rand", ephemeral=lambda: random.uniform(-1, 1))
+    if use_ercs:
+        pset.addEphemeralConstant("rand", ephemeral=lambda: random.uniform(-1, 1))
 
 
 def init_toolbox(toolbox, pset, crossover, n_trees):
