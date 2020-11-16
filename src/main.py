@@ -1,9 +1,8 @@
 from threadpoolctl import threadpool_limits
 
-
-
 import warnings
 import sys
+import os
 import re
 import csv
 
@@ -30,21 +29,18 @@ from ea_simple_elitism import eaSimple
 from selection import *
 from util.draw_individual import draw_individual
 
-from read_data import read_data
+import run_data
 
-POP_SIZE = 100
-NGEN = 1000
+
+rd = run_data.RunData()
 CXPB = 0.8
 MUTPB = 0.2
 ELITISM = 10
-PARSIMONY = False
 CMPLX = "nodes_total"  # complexity measure of individuals
 BCKT = no_bucketing  # bucketing used for lexicographic parsimony pressure
 BCKT_VAL = 5  # bucketing parameter
 REP = mt  # individual representation {mt (multi-tree) or vt (vector-tree)}
 MT_CX = "sic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
-DATA_DIR = "../data"
-N_DIMS = 2
 
 
 def evaluate(individual, toolbox, data, embedding, metric):
@@ -150,12 +146,16 @@ def write_ind_to_file(ind, run_num, results):
 
     line_list.append("\n")
 
-    fl = open("%d_ind.txt" % run_num, 'w')
+    fname = "{}/{}_ind.txt".format(rd.outdir, run_num)
+    if not os.path.exists(fname):
+        os.makedirs(os.path.dirname(fname))
+
+    fl = open(fname, 'w')
     fl.writelines(line_list)
     fl.close()
 
     csv_columns = results.keys()
-    csv_file = "%d_results.txt" % run_num
+    csv_file = "{}/{}_results.txt".format(rd.outdir, run_num)
 
     with open(csv_file, 'w') as f:
         writer = csv.DictWriter(f, fieldnames=csv_columns)
@@ -175,7 +175,7 @@ def init_toolbox(toolbox, pset, n_trees):
     if REP is vt:
         mt.init_toolbox(toolbox, pset, MT_CX)
 
-    if PARSIMONY:
+    if rd.use_parsimony:
         toolbox.register("eval_complexity", eval_complexity, measure=CMPLX)
         toolbox.register("bucket", BCKT, BCKT_VAL)
         toolbox.register("select", parsimony_tournament, tournsize=7, toolbox=toolbox)
@@ -273,41 +273,35 @@ def plot_stats(logbook):
     plt.show()
 
 
-def main(datafile, run_num):
+def main():
 
-    random.seed(SEED)
-    all_data = read_data("%s/%s.data" % (DATA_DIR, datafile))
-    data = all_data["data"]
-    labels = all_data["labels"]
+    random.seed(rd.seed)
 
-    umap = UMAP(n_components=N_DIMS, random_state=SEED).fit(data)
+    umap = UMAP(n_components=rd.n_dims, random_state=rd.seed).fit(rd.data)
 
-    num_classes = len(set(labels))
+    num_classes = len(set(rd.labels))
     print("%d classes found." % num_classes)
-    distance_vector = pairwise_distances(data)
+    distance_vector = pairwise_distances(rd.data)
 
-    num_instances = data.shape[0]
-    num_features = data.shape[1]
-
-    pset = gp.PrimitiveSet("MAIN", num_features, prefix="f")
+    pset = gp.PrimitiveSet("MAIN", rd.num_features, prefix="f")
     pset.context["array"] = np.array
-    REP.init_primitives(pset)
+    REP.init_primitives(pset, rd.use_ercs)
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
     # set up toolbox
     toolbox = base.Toolbox()
-    init_toolbox(toolbox, pset, N_DIMS)
+    init_toolbox(toolbox, pset, rd.n_dims)
 
-    toolbox.register("evaluate", evaluate, toolbox=toolbox, data=data,
-                     metric='spearmans', embedding=umap.embedding_)
+    toolbox.register("evaluate", evaluate, toolbox=toolbox, data=rd.data,
+                     metric=rd.measure, embedding=umap.embedding_)
 
-    pop = toolbox.population(n=POP_SIZE)
+    pop = toolbox.population(n=rd.pop)
     hof = tools.HallOfFame(1)
 
     stats = init_stats()
 
-    pop, logbook = eaSimple(pop, toolbox, CXPB, MUTPB, ELITISM, NGEN, stats, halloffame=hof, verbose=True)
+    pop, logbook = eaSimple(pop, toolbox, CXPB, MUTPB, ELITISM, rd.gens, stats, halloffame=hof, verbose=True)
 
     # TODO: re-implement outputting of run data
 
@@ -316,11 +310,13 @@ def main(datafile, run_num):
     #     logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
 
     best = hof[0]
-    res = final_evaluation(best, data, labels, umap, toolbox)
+    res = final_evaluation(best, rd.data, rd.labels, umap, toolbox)
     # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
     #          plot_sil=True)
-    write_ind_to_file(best, run_num, res)
-    draw_individual(best, datafile, run_type).draw("{}-best.png".format(run_num))
+    write_ind_to_file(best, rd.seed, res)
+
+    # TODO: fix string passed to individuals
+    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, ""))
 
     return pop, stats, hof
 
@@ -329,24 +325,8 @@ def main(datafile, run_num):
 [seed] [data file] [{parsimony, noparsimony}]
 """
 if __name__ == "__main__":
-    SEED = int(sys.argv[1])
-    run_type = sys.argv[3]
-
-    PARSIMONY = False if run_type.startswith('no') else True
-
-    if 'unique' in run_type:
-        CMPLX = 'unique_fts'
-    else:
-        CMPLX = 'nodes_total'
-
-    if run_type.endswith('aic'):
-        MT_CX = 'aic'
-    elif run_type.endswith('sic'):
-        MT_CX = 'sic'
-    else:
-        MT_CX = 'ric'
-    with threadpool_limits(limits=1, user_api='blas'):
-        main(sys.argv[2], SEED)
+    run_data.init_data(rd)
+    main()
 
 
 
