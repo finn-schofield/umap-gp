@@ -336,7 +336,7 @@ def main():
     write_ind_to_file(best, rd.seed, res)
 
     # TODO: fix string passed to individuals
-    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.datafile))
+    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
 
     return pop, stats, hof
 
