@@ -29,6 +29,8 @@ from ea_simple_elitism import eaSimple
 from selection import *
 from util.draw_individual import draw_individual
 
+from scipy.stats import pearsonr
+
 import run_data
 
 
@@ -40,7 +42,7 @@ CMPLX = "nodes_total"  # complexity measure of individuals
 BCKT = no_bucketing  # bucketing used for lexicographic parsimony pressure
 BCKT_VAL = 5  # bucketing parameter
 REP = mt  # individual representation {mt (multi-tree) or vt (vector-tree)}
-MT_CX = "sic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
+MT_CX = "aic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
 
 
 def evaluate(individual, toolbox, data, embedding, metric):
@@ -58,12 +60,22 @@ def evaluate(individual, toolbox, data, embedding, metric):
 
     X = REP.process_data(individual, toolbox, data)
 
+
     if metric == 'spearmans':
         return (1.0 - spearmans(embedding, X))/2.0,
+    elif metric == 'pearsons':
+        #lol GP makin' constantz
+        if np.any(np.all(X == X[0,:],axis=0)):
+            return 1.,
+        corrcoef = np.corrcoef(X.T, embedding.T)[0, 1]
+        #print(corrcoef)
+        return (1.0 - np.abs(corrcoef)) / 2.0,
     elif metric == "mse":
         return MSE(embedding, X),
     else:
         raise Exception("invalid metric: {}".format(metric))
+
+
 
 
 def spearmans(o1, o2):
@@ -218,14 +230,22 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
     """
 
     X = REP.process_data(best, toolbox, data)
+    print(X)
+    print(umap.embedding_)
 
     X_a, X_b = zip(*X)
-    plt.scatter(X_a, X_b, c=labels)
+    plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
+    # plt.xlim(np.min(X_a), np.max(X_a))
+    # plt.xlim(np.min(X_b), np.max(X_b))
     plt.title('GP')
     plt.show()
 
     X_a, X_b = zip(*umap.embedding_)
-    plt.scatter(X_a, X_b, c=labels)
+    plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
+    # plt.xlim(np.min(X_a),np.max(X_a))
+    # plt.xlim(np.min(X_b), np.max(X_b))
     plt.title('UMAP')
     plt.show()
     best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
@@ -316,7 +336,7 @@ def main():
     write_ind_to_file(best, rd.seed, res)
 
     # TODO: fix string passed to individuals
-    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, ""))
+    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.datafile))
 
     return pop, stats, hof
 

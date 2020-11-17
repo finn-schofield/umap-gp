@@ -5,6 +5,10 @@ from scipy.special import expit
 from deap import gp, creator
 from deap import tools
 
+import copy
+
+import operator
+
 
 def process_data(individual, toolbox, data):
     no_instances = data.shape[0]
@@ -54,7 +58,7 @@ def init_toolbox(toolbox, pset, crossover, n_trees):
     if crossover == "ric":
         toolbox.register("mate", xmate_ric)
     elif crossover == "aic":
-        toolbox.register("mate", xmate_aic)
+        toolbox.register("mate", lim_xmate_aic)
     elif crossover == "sic":
         toolbox.register("mate", xmate_sic)
 
@@ -71,6 +75,22 @@ def xmate_ric(ind1, ind2):
     i2 = random.randrange(len(ind2))
     ind1[i1], ind2[i2] = gp.cxOnePoint(ind1[i1], ind2[i2])
     return ind1, ind2
+
+
+def lim_xmate_aic(ind1, ind2):
+    """
+    Basically, keep only changes that obey max depth constraint on a tree-wise (NOT individual-wise) level.
+    :param ind1:
+    :param ind2:
+    :return:
+    """
+    keep_inds = [copy.deepcopy(ind1), copy.deepcopy(ind2)]
+    new_inds = list(xmate_aic(ind1, ind2))
+    for i, ind in enumerate(new_inds):
+        for j, tree in enumerate(ind):
+            if tree.height > 9:
+                new_inds[i][j] = keep_inds[i][j]
+    return new_inds
 
 
 def xmate_aic(ind1, ind2):
