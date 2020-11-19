@@ -30,7 +30,8 @@ def process_data(individual, toolbox, data):
 
 def init_primitives(pset, use_ercs):
 
-    pset.addPrimitive(np.add, 2)
+    # pset.addPrimitive(np.add, 2)
+    pset.addPrimitive(np_many_add, 5)
     pset.addPrimitive(np.subtract, 2)
     pset.addPrimitive(np.multiply, 2)
     # pset.addPrimitive(add_abs, 2)
@@ -131,6 +132,10 @@ def sigmoid(x):
 
 def relu(x):
     return x * (x > 0)
+
+
+def np_many_add(a, b, c, d, e):
+    return a + b + c + d + e
 
 
 def protected_div(left, right):

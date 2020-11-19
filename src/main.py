@@ -64,18 +64,31 @@ def evaluate(individual, toolbox, data, embedding, metric):
     if metric == 'spearmans':
         return (1.0 - spearmans(embedding, X))/2.0,
     elif metric == 'pearsons':
-        #lol GP makin' constantz
-        if np.any(np.all(X == X[0,:],axis=0)):
-            return 1.,
-        corrcoef = np.corrcoef(X.T, embedding.T)[0, 1]
-        #print(corrcoef)
-        return (1.0 - np.abs(corrcoef)) / 2.0,
+        # #lol GP makin' constantz
+        # if np.any(np.all(X == X[0,:],axis=0)):
+        #     return 1.,
+        # corrcoef = np.corrcoef(X.T, embedding.T)[0, 1]
+        # #print(corrcoef)
+        # return (1.0 - np.abs(corrcoef)) / 2.0,
+
+        f = pearsons(X.T, embedding.T)
+        return 1-f,
     elif metric == "mse":
         return MSE(embedding, X),
     else:
         raise Exception("invalid metric: {}".format(metric))
 
 
+def pearsons(data_t, embedding_t):
+    abs_pearson = np.zeros(len(data_t))
+    for of in range(len(data_t)):
+        # for constant features, clearly zero correlation to them, no?
+        if (data_t[of, :] == data_t[of, :][0]).all():
+            abs_pearson[of] = 0.
+        else:
+            pearson = np.corrcoef(data_t[of, :], embedding_t[of, :])[0, 1]
+            abs_pearson[of] = np.abs(pearson)
+    return abs_pearson.sum() / len(data_t)
 
 
 def spearmans(o1, o2):
