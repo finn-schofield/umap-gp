@@ -109,7 +109,7 @@ def eaSimple(population, toolbox, cxpb, mutpb, elitism, ngen, stats=None,
         record = stats.compile(population) if stats else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record)
         if verbose:
-            sys.stderr.write(logbook.stream)
+            # sys.stderr.write(logbook.stream)
             print(logbook.stream)
 
     return population, logbook

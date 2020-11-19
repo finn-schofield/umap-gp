@@ -173,7 +173,7 @@ def write_ind_to_file(ind, run_num, results):
 
     fname = "{}/{}_ind.txt".format(rd.outdir, run_num)
     if not os.path.exists(fname):
-        os.makedirs(os.path.dirname(fname))
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
 
     fl = open(fname, 'w')
     fl.writelines(line_list)
@@ -349,7 +349,7 @@ def main():
     write_ind_to_file(best, rd.seed, res)
 
     # TODO: fix string passed to individuals
-    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.datafile))
+    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
 
     return pop, stats, hof
 
