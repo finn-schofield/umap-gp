@@ -44,6 +44,9 @@ BCKT_VAL = 5  # bucketing parameter
 REP = mt  # individual representation {mt (multi-tree) or vt (vector-tree)}
 MT_CX = "aic"  # crossover for multi-tree {'aic', 'ric', 'sic'}
 
+# MAX_E = None    # used for normalising with nrmse
+# MIN_E = None
+
 
 def evaluate(individual, toolbox, data, embedding, metric):
     """
@@ -74,7 +77,14 @@ def evaluate(individual, toolbox, data, embedding, metric):
         f = pearsons(X.T, embedding.T)
         return 1-f,
     elif metric == "mse":
-        return MSE(embedding, X),
+        return MSE(embedding, X, squared=False),
+    elif metric == "nrmse":
+        errors = MSE(embedding, X, multioutput='raw_values')
+        total_error = 0
+        for error in enumerate(errors):
+            total_error += error[1]/(MAX_E[error[0]] - MIN_E[error[0]])
+        return total_error,
+
     else:
         raise Exception("invalid metric: {}".format(metric))
 
@@ -86,7 +96,7 @@ def pearsons(data_t, embedding_t):
         if (data_t[of, :] == data_t[of, :][0]).all():
             abs_pearson[of] = 0.
         else:
-            pearson = np.corrcoef(data_t[of, :], embedding_t[of, :])[0, 1]
+            pearson = np.corrcoef(data_t[of], embedding_t[of])[0, 1]
             abs_pearson[of] = np.abs(pearson)
     return abs_pearson.sum() / len(data_t)
 
@@ -311,6 +321,14 @@ def main():
     random.seed(rd.seed)
 
     umap = UMAP(n_components=rd.n_dims, random_state=rd.seed).fit(rd.data)
+
+    if rd.measure == "nrmse":
+        global MAX_E
+        global MIN_E
+        MAX_E = np.amax(umap.embedding_.T, 1)
+        MIN_E = np.amin(umap.embedding_.T, 1)
+        print()
+
 
     num_classes = len(set(rd.labels))
     print("%d classes found." % num_classes)

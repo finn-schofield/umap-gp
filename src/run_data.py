@@ -22,7 +22,7 @@ def init_data(rd):
     parser.add_argument("--parsimony", help="use parsimony pressure", dest='use_parsimony', action='store_true')
     parser.add_argument("--dim", dest="n_dims", type=int, default=2)
     parser.add_argument("-m", "--measure", help="Measure to be used for fitness", type=str, default="spearmans",
-                        choices=["spearmans", "mse", "pearsons"])
+                        choices=["spearmans", "mse", "nrmse", "pearsons"])
 
     parser.set_defaults(use_parsimony=False)
     parser.set_defaults(use_ercs=False)

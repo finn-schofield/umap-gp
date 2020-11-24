@@ -37,6 +37,7 @@ def init_primitives(pset, use_ercs):
     # pset.addPrimitive(add_abs, 2)
     # pset.addPrimitive(sub_abs, 2)
     pset.addPrimitive(protected_div, 2)
+    # pset.addPrimitive(analytic_quotient, 2)
     pset.addPrimitive(np.maximum, 2)
     pset.addPrimitive(np.minimum, 2)
     pset.addPrimitive(relu, 1)
@@ -136,6 +137,10 @@ def relu(x):
 
 def np_many_add(a, b, c, d, e):
     return a + b + c + d + e
+
+
+def analytic_quotient(a, b):
+    return a / np.sqrt(1 + b**2)
 
 
 def protected_div(left, right):
