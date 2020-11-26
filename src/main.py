@@ -84,6 +84,8 @@ def evaluate(individual, toolbox, data, embedding, metric):
         for error in enumerate(errors):
             total_error += error[1]/(MAX_E[error[0]] - MIN_E[error[0]])
         return total_error,
+    elif metric == "umap_cost":
+        return 0,
 
     else:
         raise Exception("invalid metric: {}".format(metric))
