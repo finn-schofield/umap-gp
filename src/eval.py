@@ -16,9 +16,17 @@ def umap_cost(data, embedding, v, k=15):
     """
 
     w = calculate_w(pairwise_distances(embedding))
-    a = 0
-    b = 0
-    cost = - ((v * np.log(w)) + np.where(w == 1.0, w, ((1 - v) * np.log(1 - w))))
+    w = w[~np.eye(w.shape[0], dtype=bool)].reshape(w.shape[0], -1)  # Remove main diagonal
+    v = v[~np.eye(v.shape[0], dtype=bool)].reshape(v.shape[0], -1)
+    w = np.where(w == 1.0, 0.99, w)
+    a = (np.multiply(v, np.log(w)))
+    b = np.multiply((1 - v), np.log(1 - w))
+    cost = - (a + b)
+    print("complete")
+    # cost = - ((np.multiply(v,  np.log(w))) + (np.multiply((1 - v), np.log(1 - w))))
+
+    # a = 0
+    # b = 0
     # for i in range(data.shape[0]):
     #     for j in range(data.shape[0]):
     #         a += v[i, j] * np.log(w[i, j])
@@ -32,7 +40,7 @@ def umap_cost(data, embedding, v, k=15):
 
 
 def calculate_w(x, a=1.929, b=0.7915):
-    return 1.0 / (1.0 + a * np.power(x, (2 * b)))
-
+    w = 1.0 / (1.0 + a * np.power(x, (2 * b)))
+    return w
 
 
