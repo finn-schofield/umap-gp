@@ -6,7 +6,7 @@ SMOOTH_K_TOLERANCE = 1e-5
 MIN_K_DIST_SCALE = 1e-3
 
 
-def umap_cost(data, embedding, k=15):
+def umap_cost(data, embedding, v, k=15):
     """
 
     :param data: found embedding
@@ -15,30 +15,19 @@ def umap_cost(data, embedding, k=15):
     :return:
     """
 
-    v = fuzzy_simplicial_set(
-        data,
-        k,
-        np.random.RandomState(1),
-        "euclidean"
-    )[0]
     w = calculate_w(pairwise_distances(embedding))
-
-    print(v.shape)
-    print(w.shape)
     a = 0
     b = 0
-    cv = 0
-    for i in range(data.shape[0]):
-        for j in range(data.shape[0]):
-            cv += v[i, j] * np.log(v[i, j]) + (1 - v[i, j]) * np.log(1 - v[i, j])
-            a += v[i, j] * np.log(w[i, j])
-            if w[i, j] == 1.0:
-                b += 1.0
-            else:
-                b += (1 - v[i, j]) * np.log(1 - w[i, j])
-
-    cost = cv - a - b
-
+    cost = - ((v * np.log(w)) + np.where(w == 1.0, w, ((1 - v) * np.log(1 - w))))
+    # for i in range(data.shape[0]):
+    #     for j in range(data.shape[0]):
+    #         a += v[i, j] * np.log(w[i, j])
+    #         if w[i, j] == 1.0:
+    #             b += 1.0
+    #         else:
+    #             b += (1 - v[i, j]) * np.log(1 - w[i, j])
+    #
+    # cost = - (a + b)
     return cost
 
 

@@ -23,6 +23,8 @@ from sklearn.metrics import mean_squared_error as MSE
 from sklearn.metrics import pairwise_distances
 
 from umap import UMAP
+from umap.umap_ import fuzzy_simplicial_set
+from eval import umap_cost
 
 from ea_simple_elitism import eaSimple
 
@@ -85,7 +87,7 @@ def evaluate(individual, toolbox, data, embedding, metric):
             total_error += error[1]/(MAX_E[error[0]] - MIN_E[error[0]])
         return total_error,
     elif metric == "umap_cost":
-        return 0,
+        return umap_cost(data, X, v),
 
     else:
         raise Exception("invalid metric: {}".format(metric))
@@ -329,7 +331,16 @@ def main():
         global MIN_E
         MAX_E = np.amax(umap.embedding_.T, 1)
         MIN_E = np.amin(umap.embedding_.T, 1)
-        print()
+
+    if rd.measure == "umap_cost":
+        global v
+        v = fuzzy_simplicial_set(
+            rd.data,
+            15,
+            np.random.RandomState(rd.seed),
+            "euclidean"
+        )[0].todense()
+
 
 
     num_classes = len(set(rd.labels))
