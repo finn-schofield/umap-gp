@@ -87,7 +87,7 @@ def evaluate(individual, toolbox, data, embedding, metric):
             total_error += error[1]/(MAX_E[error[0]] - MIN_E[error[0]])
         return total_error,
     elif metric == "umap_cost":
-        return umap_cost(data, X, v),
+        return umap_cost(X, v),
 
     else:
         raise Exception("invalid metric: {}".format(metric))
@@ -261,16 +261,16 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
     print(umap.embedding_)
 
     X_a, X_b = zip(*X)
-    plt.plot(X_a, X_b, 'bo')
-    # plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
+    # plt.plot(X_a, X_b, 'bo')
+    plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
     # plt.xlim(np.min(X_a), np.max(X_a))
     # plt.xlim(np.min(X_b), np.max(X_b))
     plt.title('GP')
     plt.show()
 
     X_a, X_b = zip(*umap.embedding_)
-    plt.plot(X_a, X_b, 'bo')
-    # plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
+    # plt.plot(X_a, X_b, 'bo')
+    plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
     # plt.xlim(np.min(X_a),np.max(X_a))
     # plt.xlim(np.min(X_b), np.max(X_b))
     plt.title('UMAP')
@@ -323,7 +323,6 @@ def plot_stats(logbook):
 def main():
 
     random.seed(rd.seed)
-
     umap = UMAP(n_components=rd.n_dims, random_state=rd.seed).fit(rd.data)
 
     if rd.measure == "nrmse":
@@ -340,12 +339,13 @@ def main():
             np.random.RandomState(rd.seed),
             "euclidean"
         )[0].todense()
+        print("UMAP Embedding Cost: {}".format(umap_cost(umap.embedding_, v)))
 
 
 
     num_classes = len(set(rd.labels))
     print("%d classes found." % num_classes)
-    distance_vector = pairwise_distances(rd.data)
+    # distance_vector = pairwise_distances(rd.data)
 
     pset = gp.PrimitiveSet("MAIN", rd.num_features, prefix="f")
     pset.context["array"] = np.array

@@ -1,28 +1,29 @@
 from sklearn.metrics import pairwise_distances
 import numpy as np
+from math import isnan
 from umap.umap_ import fuzzy_simplicial_set
 
 SMOOTH_K_TOLERANCE = 1e-5
 MIN_K_DIST_SCALE = 1e-3
 
 
-def umap_cost(data, embedding, v, k=15):
+def umap_cost(embedding, v):
     """
 
-    :param data: found embedding
-    :param embedding: umap embedding to be optimised against
-    :param k: nearest neighbors to check for each instance
+    :param embedding: low dimensional embedding of data
+    :param v: the membership strength of the instances in the original dimensions
     :return:
     """
-
     w = calculate_w(pairwise_distances(embedding))
     w = w[~np.eye(w.shape[0], dtype=bool)].reshape(w.shape[0], -1)  # Remove main diagonal
     v = v[~np.eye(v.shape[0], dtype=bool)].reshape(v.shape[0], -1)
-    w = np.where(w == 1.0, 0.99, w)
+    w = np.where(w == 1.0, w - 1e-4, w)
     a = (np.multiply(v, np.log(w)))
     b = np.multiply((1 - v), np.log(1 - w))
-    cost = - (a + b)
-    print("complete")
+    cost = - np.sum(a + b)
+    if isnan(cost):
+        cost = np.inf
+    return cost
     # cost = - ((np.multiply(v,  np.log(w))) + (np.multiply((1 - v), np.log(1 - w))))
 
     # a = 0
@@ -36,7 +37,6 @@ def umap_cost(data, embedding, v, k=15):
     #             b += (1 - v[i, j]) * np.log(1 - w[i, j])
     #
     # cost = - (a + b)
-    return cost
 
 
 def calculate_w(x, a=1.929, b=0.7915):
