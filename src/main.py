@@ -27,7 +27,6 @@ from eval import umap_cost
 from ea_simple_elitism import eaSimple
 
 from selection import *
-from util.draw_individual import draw_individual
 
 from scipy.stats import pearsonr
 
@@ -400,9 +399,6 @@ def main():
     write_embedding_to_file(best_embedding)
 
     write_ind_to_file(best, rd.seed, res)
-
-    # TODO: fix string passed to individuals
-    # draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
 
     return pop, stats, hof
 
