@@ -36,6 +36,7 @@ def init_data(rd):
     rd.labels = rd.all_data["labels"]
     rd.num_instances = rd.data.shape[0]
     rd.num_features = rd.data.shape[1]
+    rd.num_classes = len(set(rd.labels))
 
 
 def update_experiment_data(data, ns):

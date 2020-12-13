@@ -260,23 +260,25 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
     print(X)
     print(umap.embedding_)
 
-    X_a, X_b = zip(*X)
-    # plt.plot(X_a, X_b, 'bo')
-    plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
-    # plt.xlim(np.min(X_a), np.max(X_a))
-    # plt.xlim(np.min(X_b), np.max(X_b))
-    plt.title('GP')
-    plt.show()
+    # X_a, X_b = zip(*X)
+    # # plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
+    # # plt.xlim(np.min(X_a), np.max(X_a))
+    # # plt.xlim(np.min(X_b), np.max(X_b))
+    # plt.title('GP')
+    # plt.show()
+    #
+    # X_a, X_b = zip(*umap.embedding_)
+    # # plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
+    # # plt.xlim(np.min(X_a),np.max(X_a))
+    # # plt.xlim(np.min(X_b), np.max(X_b))
+    # plt.title('UMAP')
+    # plt.show()
 
-    X_a, X_b = zip(*umap.embedding_)
-    # plt.plot(X_a, X_b, 'bo')
-    plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
-    # plt.xlim(np.min(X_a),np.max(X_a))
-    # plt.xlim(np.min(X_b), np.max(X_b))
-    plt.title('UMAP')
-    plt.show()
     best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
     best_mse = evaluate(best, toolbox, data, umap.embedding_, "mse")[0]
+    umap_cost = evaluate(best, toolbox, data, umap.embedding_, "umap_cost")[0]
 
     unique = eval_complexity(best, "unique_fts")
     nodes = eval_complexity(best, "nodes_total")
@@ -286,9 +288,27 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
         print("Total nodes: %d\n" % nodes)
         print("Best MSE: %f \n" % best_mse)
         print("Best Spearmans: %f \n" % best_spearmans)
+        print("UMAP Cost: {}\n".format(umap_cost))
 
     return {"unique-fts": unique, "total-nodes": nodes, "best-mse": best_mse,
-            "best-spearmans": best_spearmans}
+            "best-spearmans": best_spearmans, "umap-cost": umap_cost}
+
+
+def write_embedding_to_file(embedding):
+
+    fname = "{}/{}_emb.data".format(rd.outdir, rd.seed)
+    if not os.path.exists(fname):
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
+    fl = open(fname, 'w')
+    fl.write("classLast,{},{},comma".format(rd.n_dims, rd.num_classes))
+    lines = []
+    for index, instance in enumerate(embedding):
+        line = np.append(instance, int(rd.labels[index])).tolist()
+        line[-1] = int(line[-1])
+        lines.append("\n"+",".join(map(str, line)))
+    fl.writelines(lines)
+    fl.close()
 
 
 def plot_stats(logbook):
@@ -369,18 +389,22 @@ def main():
 
     # TODO: re-implement outputting of run data
 
-    # for chapter in logbook.chapters:
-    #     logbook_df = pd.DataFrame(logbook.chapters[chapter])
-    #     logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
+    for chapter in logbook.chapters:
+        logbook_df = pd.DataFrame(logbook.chapters[chapter])
+        logbook_df.to_csv("{}/{}_{}.csv".format(rd.outdir, chapter, rd.seed), index=False)
 
     best = hof[0]
     res = final_evaluation(best, rd.data, rd.labels, umap, toolbox)
     # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
     #          plot_sil=True)
+
+    best_embedding = REP.process_data(best, toolbox, rd.data)
+    write_embedding_to_file(best_embedding)
+
     write_ind_to_file(best, rd.seed, res)
 
     # TODO: fix string passed to individuals
-    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
+    # draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
 
     return pop, stats, hof
 
