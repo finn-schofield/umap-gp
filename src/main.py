@@ -1,5 +1,3 @@
-from threadpoolctl import threadpool_limits
-
 import warnings
 import sys
 import os
