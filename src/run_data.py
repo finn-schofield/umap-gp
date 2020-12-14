@@ -23,6 +23,8 @@ def init_data(rd):
     parser.add_argument("--dim", dest="n_dims", type=int, default=2)
     parser.add_argument("-m", "--measure", help="Measure to be used for fitness", type=str, default="spearmans",
                         choices=["spearmans", "mse", "nrmse", "pearsons", "umap_cost"])
+    parser.add_argument("-nn", "--nearest_neighbors", help="Nearest neighbors to be used for UMAP cost", type=int,
+                        default=15)
 
     parser.set_defaults(use_parsimony=False)
     parser.set_defaults(use_ercs=False)

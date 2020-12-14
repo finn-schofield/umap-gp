@@ -11,13 +11,14 @@ def plot_embedding(embedding, labels, output_fname):
     # plt.xlim(np.min(X_b), np.max(X_b))
     plt.title('GP')
     plt.savefig(output_fname)
+    plt.clf()
 
 
-def plot_all_in_dir(dir, dataset):
+def plot_all_in_dir(dir, dataset, run_type):
     i = 1
     while os.path.isfile("{}/{}_emb.data" .format(dir, i)):
         data = read_data("{}/{}_emb.data" .format(dir, i))
-        plot_embedding(data['data'], data['labels'], "{}/{}_{}_emb.png" .format(OUTPUT_DIR, dataset, i))
+        plot_embedding(data['data'], data['labels'], "{}/{}:{}_{}_emb.png" .format(OUTPUT_DIR, dataset, run_type, i))
         i += 1
 
 
@@ -30,9 +31,10 @@ def main():
 
     for dataset in get_immediate_subdirectories(ROOT_DIR):
         dataset_dir = os.path.join(ROOT_DIR, dataset)
-
-        count += 1
-        plot_all_in_dir(dataset_dir, dataset)
+        for run_type in get_immediate_subdirectories(dataset_dir):
+            current_dir = os.path.join(dataset_dir, run_type)
+            count += 1
+            plot_all_in_dir(current_dir, dataset, run_type)
 
     print("\n{} runs processed".format(count))
 

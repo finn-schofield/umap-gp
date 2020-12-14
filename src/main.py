@@ -352,7 +352,7 @@ def main():
         global v
         v = fuzzy_simplicial_set(
             rd.data,
-            15,
+            rd.nearest_neighbors,
             np.random.RandomState(rd.seed),
             "euclidean"
         )[0].todense()
