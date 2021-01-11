@@ -23,6 +23,8 @@ def init_data(rd):
     parser.add_argument("--dim", dest="n_dims", type=int, default=2)
     parser.add_argument("-m", "--measure", help="Measure to be used for fitness", type=str, default="spearmans",
                         choices=["spearmans", "mse", "nrmse", "pearsons", "umap_cost"])
+    parser.add_argument("-nn", "--nearest_neighbors", help="Nearest neighbors to be used for UMAP cost", type=int,
+                        default=15)
 
     parser.set_defaults(use_parsimony=False)
     parser.set_defaults(use_ercs=False)
@@ -36,6 +38,7 @@ def init_data(rd):
     rd.labels = rd.all_data["labels"]
     rd.num_instances = rd.data.shape[0]
     rd.num_features = rd.data.shape[1]
+    rd.num_classes = len(set(rd.labels))
 
 
 def update_experiment_data(data, ns):

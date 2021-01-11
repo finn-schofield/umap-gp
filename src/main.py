@@ -1,5 +1,3 @@
-from threadpoolctl import threadpool_limits
-
 import warnings
 import sys
 import os
@@ -30,7 +28,6 @@ from eval import umap_cost, classif_eval
 from ea_simple_elitism import eaSimple
 
 from selection import *
-from util.draw_individual import draw_individual
 
 from scipy.stats import pearsonr
 
@@ -260,21 +257,22 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
     print(X)
     print(umap.embedding_)
 
-    X_a, X_b = zip(*X)
-    # plt.plot(X_a, X_b, 'bo')
-    plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
-    # plt.xlim(np.min(X_a), np.max(X_a))
-    # plt.xlim(np.min(X_b), np.max(X_b))
-    plt.title('GP')
-    plt.show()
+    # X_a, X_b = zip(*X)
+    # # plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
+    # # plt.xlim(np.min(X_a), np.max(X_a))
+    # # plt.xlim(np.min(X_b), np.max(X_b))
+    # plt.title('GP')
+    # plt.show()
+    #
+    # X_a, X_b = zip(*umap.embedding_)
+    # # plt.plot(X_a, X_b, 'bo')
+    # plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
+    # # plt.xlim(np.min(X_a),np.max(X_a))
+    # # plt.xlim(np.min(X_b), np.max(X_b))
+    # plt.title('UMAP')
+    # plt.show()
 
-    X_a, X_b = zip(*umap.embedding_)
-    # plt.plot(X_a, X_b, 'bo')
-    plt.scatter(X_a, X_b, c=labels, marker='o',s=20)
-    # plt.xlim(np.min(X_a),np.max(X_a))
-    # plt.xlim(np.min(X_b), np.max(X_b))
-    plt.title('UMAP')
-    plt.show()
     best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
     best_mse = evaluate(best, toolbox, data, umap.embedding_, "mse")[0]
     best_cost = evaluate(best, toolbox, data, umap.embedding_, "umap_cost")[0]
@@ -309,6 +307,23 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
             "best-spearmans": best_spearmans, "gp-cost": best_cost, "umap-cost": umap_emb_cost,
             "base-acc": base_acc, "gp-acc": gp_acc, "umap-acc": umap_acc,
             "gp-time": gp_time, "umap-time": umap_time}
+
+
+def write_embedding_to_file(embedding):
+
+    fname = "{}/{}_emb.data".format(rd.outdir, rd.seed)
+    if not os.path.exists(fname):
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+
+    fl = open(fname, 'w')
+    fl.write("classLast,{},{},comma".format(rd.n_dims, rd.num_classes))
+    lines = []
+    for index, instance in enumerate(embedding):
+        line = np.append(instance, int(rd.labels[index])).tolist()
+        line[-1] = int(line[-1])
+        lines.append("\n"+",".join(map(str, line)))
+    fl.writelines(lines)
+    fl.close()
 
 
 def plot_stats(logbook):
@@ -357,7 +372,7 @@ def main():
         global v
         v = fuzzy_simplicial_set(
             rd.data,
-            15,
+            rd.nearest_neighbors,
             np.random.RandomState(rd.seed),
             "euclidean"
         )[0].todense()
@@ -393,18 +408,19 @@ def main():
 
     # TODO: re-implement outputting of run data
 
-    # for chapter in logbook.chapters:
-    #     logbook_df = pd.DataFrame(logbook.chapters[chapter])
-    #     logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
+    for chapter in logbook.chapters:
+        logbook_df = pd.DataFrame(logbook.chapters[chapter])
+        logbook_df.to_csv("{}/{}_{}.csv".format(rd.outdir, chapter, rd.seed), index=False)
 
     best = hof[0]
     res = final_evaluation(best, rd.data, rd.labels, umap, toolbox, gp_time, umap_time)
     # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
     #          plot_sil=True)
-    write_ind_to_file(best, rd.seed, res)
 
-    # TODO: fix string passed to individuals
-    draw_individual(best, rd.dataset, "").draw("{}/{}-{}-best.png".format(rd.outdir, rd.seed, rd.dataset))
+    best_embedding = REP.process_data(best, toolbox, rd.data)
+    write_embedding_to_file(best_embedding)
+
+    write_ind_to_file(best, rd.seed, res)
 
     return pop, stats, hof
 
