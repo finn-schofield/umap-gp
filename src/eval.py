@@ -1,4 +1,6 @@
 from sklearn.metrics import pairwise_distances
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score
 import numpy as np
 from math import isnan
 from umap.umap_ import fuzzy_simplicial_set
@@ -20,27 +22,26 @@ def umap_cost(embedding, v):
     w = np.where(w == 1.0, w - 1e-4, w)
     a = (np.multiply(v, np.log(w)))
     b = np.multiply((1 - v), np.log(1 - w))
+
+    # a = v * np.log(w + 0.01)
+    # b = (1 - v) * np.log(1 - w + 0.01)
+
     cost = - np.sum(a + b)
     if isnan(cost):
         cost = np.inf
     return cost
-    # cost = - ((np.multiply(v,  np.log(w))) + (np.multiply((1 - v), np.log(1 - w))))
-
-    # a = 0
-    # b = 0
-    # for i in range(data.shape[0]):
-    #     for j in range(data.shape[0]):
-    #         a += v[i, j] * np.log(w[i, j])
-    #         if w[i, j] == 1.0:
-    #             b += 1.0
-    #         else:
-    #             b += (1 - v[i, j]) * np.log(1 - w[i, j])
-    #
-    # cost = - (a + b)
 
 
 def calculate_w(x, a=1.929, b=0.7915):
     w = 1.0 / (1.0 + a * np.power(x, (2 * b)))
+    # w = np.power(1 + a * np.square(x)**b, -1)
     return w
+
+
+def classif_eval(data, labels):
+    clf = RandomForestClassifier()
+    scores = cross_val_score(clf, data, labels, cv=10)
+    return scores.mean()
+
 
 

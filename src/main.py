@@ -5,6 +5,7 @@ import sys
 import os
 import re
 import csv
+import time
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ from sklearn.metrics import pairwise_distances
 
 from umap import UMAP
 from umap.umap_ import fuzzy_simplicial_set
-from eval import umap_cost
+from eval import umap_cost, classif_eval
 
 from ea_simple_elitism import eaSimple
 
@@ -243,7 +244,7 @@ def init_stats():
     return stats
 
 
-def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
+def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, print_output=True):
     """
     Performs a final performance evaluation on an individual.
 
@@ -255,7 +256,6 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
     :param print_output: whether or not to print output
     :return: a dictionary of results, titles to values
     """
-
     X = REP.process_data(best, toolbox, data)
     print(X)
     print(umap.embedding_)
@@ -277,9 +277,15 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
     plt.show()
     best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
     best_mse = evaluate(best, toolbox, data, umap.embedding_, "mse")[0]
+    best_cost = evaluate(best, toolbox, data, umap.embedding_, "umap_cost")[0]
+    umap_emb_cost = umap_cost(umap.embedding_, v)
 
     unique = eval_complexity(best, "unique_fts")
     nodes = eval_complexity(best, "nodes_total")
+
+    base_acc = classif_eval(rd.data, rd.labels)
+    gp_acc = classif_eval(data, labels)
+    umap_acc = classif_eval(umap.embedding_, labels)
 
     if print_output:
         print("Unique features: %d\n" % unique)
@@ -287,8 +293,22 @@ def final_evaluation(best, data, labels, umap, toolbox, print_output=True):
         print("Best MSE: %f \n" % best_mse)
         print("Best Spearmans: %f \n" % best_spearmans)
 
+        print("GP Cost: {}".format(best_cost))
+        print("UMAP Cost: {}".format(umap_emb_cost))
+        print()
+
+        print("Base Classification Accuracy: {}".format(base_acc))
+        print("GP classification accuracy: {}".format(gp_acc))
+        print("UMAP classification accurcy: {}".format(umap_acc))
+        print()
+
+        print("GP Elapsed Time: {}".format(gp_time))
+        print("UMAP Elapsed Time: {}".format(umap_time))
+
     return {"unique-fts": unique, "total-nodes": nodes, "best-mse": best_mse,
-            "best-spearmans": best_spearmans}
+            "best-spearmans": best_spearmans, "gp-cost": best_cost, "umap-cost": umap_emb_cost,
+            "base-acc": base_acc, "gp-acc": gp_acc, "umap-acc": umap_acc,
+            "gp-time": gp_time, "umap-time": umap_time}
 
 
 def plot_stats(logbook):
@@ -323,7 +343,9 @@ def plot_stats(logbook):
 def main():
 
     random.seed(rd.seed)
+    umap_time = time.time()
     umap = UMAP(n_components=rd.n_dims, random_state=rd.seed).fit(rd.data)
+    umap_time = time.time() - umap_time
 
     if rd.measure == "nrmse":
         global MAX_E
@@ -341,7 +363,7 @@ def main():
         )[0].todense()
         print("UMAP Embedding Cost: {}".format(umap_cost(umap.embedding_, v)))
 
-
+    print(rd.labels)
 
     num_classes = len(set(rd.labels))
     print("%d classes found." % num_classes)
@@ -365,7 +387,9 @@ def main():
 
     stats = init_stats()
 
+    gp_time = time.time()
     pop, logbook = eaSimple(pop, toolbox, CXPB, MUTPB, ELITISM, rd.gens, stats, halloffame=hof, verbose=True)
+    gp_time = time.time() - gp_time
 
     # TODO: re-implement outputting of run data
 
@@ -374,7 +398,7 @@ def main():
     #     logbook_df.to_csv("%s_%d.csv" % (chapter, run_num), index=False)
 
     best = hof[0]
-    res = final_evaluation(best, rd.data, rd.labels, umap, toolbox)
+    res = final_evaluation(best, rd.data, rd.labels, umap, toolbox, gp_time, umap_time)
     # evaluate(best, toolbox, data, num_classes, 'silhouette_pre', distance_vector=distance_vector,
     #          plot_sil=True)
     write_ind_to_file(best, rd.seed, res)
