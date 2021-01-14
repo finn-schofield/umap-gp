@@ -369,15 +369,15 @@ def main():
         MAX_E = np.amax(umap.embedding_.T, 1)
         MIN_E = np.amin(umap.embedding_.T, 1)
 
-    if rd.measure == "umap_cost":
-        global v
-        v = fuzzy_simplicial_set(
-            rd.data,
-            rd.nearest_neighbors,
-            np.random.RandomState(rd.seed),
-            "euclidean"
-        )[0].todense()
-        print("UMAP Embedding Cost: {}".format(umap_cost(umap.embedding_, v)))
+
+    global v
+    v = fuzzy_simplicial_set(
+        rd.data,
+        rd.nearest_neighbors,
+        np.random.RandomState(rd.seed),
+        "euclidean"
+    )[0].todense()
+    print("UMAP Embedding Cost: {}".format(umap_cost(umap.embedding_, v)))
 
     print(rd.labels)
 
