@@ -11,7 +11,7 @@ PLOT = False
 
 def main():
 
-    summary_file = open("%s/summary.txt" % OUTPUT_DIR, "w")
+    summary_file = open("{}/summary.txt".format(OUTPUT_DIR), "w+")
     count = 0
 
     for dataset in get_immediate_subdirectories(ROOT_DIR):
@@ -41,7 +41,8 @@ def main():
             # now summarise the results
             # plot_column(stats["total-nodes"].tolist(), 10, fname)
             plot_data[run_type] = stats["total-nodes"].tolist()
-            summary = stats.describe().drop("count", axis=0)
+            pd.options.display.max_columns = 40
+            summary = stats.describe(include='all').drop("count", axis=0)
             print(summary, file=summary_file)
             print(file=summary_file)
         if PLOT:

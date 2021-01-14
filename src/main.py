@@ -282,6 +282,7 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
     nodes = eval_complexity(best, "nodes_total")
 
     base_acc = classif_eval(rd.data, rd.labels)
+    print(rd.data.shape)
     gp_acc = classif_eval(data, labels)
     umap_acc = classif_eval(umap.embedding_, labels)
 
