@@ -283,7 +283,7 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
 
     base_acc = classif_eval(rd.data, rd.labels)
     print(rd.data.shape)
-    gp_acc = classif_eval(data, labels)
+    gp_acc = classif_eval(X, labels)
     umap_acc = classif_eval(umap.embedding_, labels)
 
     if print_output:

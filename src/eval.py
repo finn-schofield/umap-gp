@@ -17,14 +17,14 @@ def umap_cost(embedding, v):
     :return:
     """
     w = calculate_w(pairwise_distances(embedding))
-    w = w[~np.eye(w.shape[0], dtype=bool)].reshape(w.shape[0], -1)  # Remove main diagonal
-    v = v[~np.eye(v.shape[0], dtype=bool)].reshape(v.shape[0], -1)
-    w = np.where(w == 1.0, w - 1e-4, w)
-    a = (np.multiply(v, np.log(w)))
-    b = np.multiply((1 - v), np.log(1 - w))
+    # w = w[~np.eye(w.shape[0], dtype=bool)].reshape(w.shape[0], -1)  # Remove main diagonal
+    # v = v[~np.eye(v.shape[0], dtype=bool)].reshape(v.shape[0], -1)
+    # w = np.where(w == 1.0, w - 1e-4, w)
+    # a = (np.multiply(v, np.log(w)))
+    # b = np.multiply((1 - v), np.log(1 - w))
 
-    # a = v * np.log(w + 0.01)
-    # b = (1 - v) * np.log(1 - w + 0.01)
+    a = v * np.log(w + 0.01)
+    b = (1 - v) * np.log(1 - w + 0.01)
 
     cost = - np.sum(a + b)
     if isnan(cost):
@@ -33,8 +33,8 @@ def umap_cost(embedding, v):
 
 
 def calculate_w(x, a=1.929, b=0.7915):
-    w = 1.0 / (1.0 + a * np.power(x, (2 * b)))
-    # w = np.power(1 + a * np.square(x)**b, -1)
+    # w = 1.0 / (1.0 + a * np.power(x, (2 * b)))
+    w = np.power(1 + a * np.square(x)**b, -1)
     return w
 
 

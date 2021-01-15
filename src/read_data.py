@@ -1,3 +1,6 @@
+import lzma
+from pathlib import Path
+
 import pandas as pd
 from sklearn import preprocessing
 
@@ -11,9 +14,29 @@ def delim_map(delim):
 
 
 def read_data(filename):
-    with open(filename) as f:
-        first_line = f.readline()
-        config = first_line.strip().split(",")
+    if filename.exists():
+        with open(filename,mode='rt') as f:
+            first_line = f.readline()
+            config = first_line.strip().split(",")
+    else:
+        filename2 = filename.with_suffix('.data.xz')
+        if filename2.exists():
+            print('compressed csv.')
+            with lzma.open(filename2,mode='rt') as f:
+                first_line = f.readline()
+                config = first_line.strip().split(",")
+            filename = filename2
+
+        else:
+            filename3 = filename.with_suffix('').with_suffix('.csv')
+            if filename3.exists():
+                print('raw csv. Assuming class at end.')
+                with open(filename3, mode='rt') as f:
+                    first_line = f.readline()
+                    config = ['classLast',first_line.count(','),None,'comma']
+                filename = filename3
+            else:
+                raise ValueError(filename)
 
     classPos = config[0]
     num_feat = int(config[1])
@@ -26,7 +49,6 @@ def read_data(filename):
     else:
         raise ValueError(classPos)
 
-    num_classes = int(config[2])
     delim = delim_map(config[3])
 
     rawData = pd.read_csv(filename, delimiter=delim, skiprows=1, header=None, names=feat_labels)
@@ -37,3 +59,8 @@ def read_data(filename):
 
 #    data[data.columns] = min_max_scaler.fit_transform(data[data.columns])
     return {"data": data, "labels":labels}
+
+
+if __name__ == '__main__':
+    filename = "/home/lensenandr/IdeaProjects/phd/datasets/wine.data"
+    read_data(Path(filename))
