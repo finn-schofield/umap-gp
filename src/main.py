@@ -273,9 +273,9 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
     # plt.title('UMAP')
     # plt.show()
 
-    best_spearmans = evaluate(best, toolbox, data, umap.embedding_, "spearmans")[0]
-    best_mse = evaluate(best, toolbox, data, umap.embedding_, "mse")[0]
-    best_cost = evaluate(best, toolbox, data, umap.embedding_, "umap_cost")[0]
+    best_spearmans = evaluate(best, toolbox, X, umap.embedding_, "spearmans")[0]
+    best_mse = evaluate(best, toolbox, X, umap.embedding_, "mse")[0]
+    best_cost = evaluate(best, toolbox, X, umap.embedding_, "umap_cost")[0]
     umap_emb_cost = umap_cost(umap.embedding_, v)
 
     unique = eval_complexity(best, "unique_fts")
