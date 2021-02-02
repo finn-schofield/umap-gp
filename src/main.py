@@ -273,9 +273,8 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
     # plt.title('UMAP')
     # plt.show()
 
-    best_spearmans = evaluate(best, toolbox, X, umap.embedding_, "spearmans")[0]
-    best_mse = evaluate(best, toolbox, X, umap.embedding_, "mse")[0]
-    best_cost = evaluate(best, toolbox, X, umap.embedding_, "umap_cost")[0]
+    best_nrmse = evaluate(best, toolbox, data, umap.embedding_, "nrmse")[0]
+    best_cost = evaluate(best, toolbox, data, umap.embedding_, "umap_cost")[0]
     umap_emb_cost = umap_cost(umap.embedding_, v)
 
     unique = eval_complexity(best, "unique_fts")
@@ -289,8 +288,7 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
     if print_output:
         print("Unique features: %d\n" % unique)
         print("Total nodes: %d\n" % nodes)
-        print("Best MSE: %f \n" % best_mse)
-        print("Best Spearmans: %f \n" % best_spearmans)
+        print("Best NRMSE: %f \n" % best_nrmse)
 
         print("GP Cost: {}".format(best_cost))
         print("UMAP Cost: {}".format(umap_emb_cost))
@@ -304,8 +302,8 @@ def final_evaluation(best, data, labels, umap, toolbox, gp_time, umap_time, prin
         print("GP Elapsed Time: {}".format(gp_time))
         print("UMAP Elapsed Time: {}".format(umap_time))
 
-    return {"unique-fts": unique, "total-nodes": nodes, "best-mse": best_mse,
-            "best-spearmans": best_spearmans, "gp-cost": best_cost, "umap-cost": umap_emb_cost,
+    return {"unique-fts": unique, "total-nodes": nodes, "best-nrmse": best_nrmse,
+            "gp-cost": best_cost, "umap-cost": umap_emb_cost,
             "base-acc": base_acc, "gp-acc": gp_acc, "umap-acc": umap_acc,
             "gp-time": gp_time, "umap-time": umap_time}
 
