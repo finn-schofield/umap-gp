@@ -6,6 +6,7 @@ from read_data import read_data
 
 def plot_embedding(embedding, labels, output_fname):
     X_a, X_b = zip(*embedding)
+
     plt.scatter(X_a, X_b, c=labels, marker='o', s=20)
     # plt.xlim(np.min(X_a), np.max(X_a))
     # plt.xlim(np.min(X_b), np.max(X_b))
@@ -31,7 +32,7 @@ def main():
 
     for dataset in get_immediate_subdirectories(ROOT_DIR):
         dataset_dir = os.path.join(ROOT_DIR, dataset)
-        for run_type in get_immediate_subdirectories(dataset_dir):
+        for run_type in ['2']:
             current_dir = os.path.join(dataset_dir, run_type)
             count += 1
             plot_all_in_dir(current_dir, dataset, run_type)

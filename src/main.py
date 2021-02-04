@@ -212,12 +212,12 @@ def init_toolbox(toolbox, pset, n_trees):
     if REP is vt:
         mt.init_toolbox(toolbox, pset, MT_CX)
 
-    if rd.use_parsimony:
-        toolbox.register("eval_complexity", eval_complexity, measure=CMPLX)
-        toolbox.register("bucket", BCKT, BCKT_VAL)
-        toolbox.register("select", parsimony_tournament, tournsize=7, toolbox=toolbox)
-    else:
-        toolbox.register("select", tools.selTournament, tournsize=7)
+    # if rd.use_parsimony:
+    #     toolbox.register("eval_complexity", eval_complexity, measure=CMPLX)
+    #     toolbox.register("bucket", BCKT, BCKT_VAL)
+    #     toolbox.register("select", parsimony_tournament, tournsize=7, toolbox=toolbox)
+    # else:
+    toolbox.register("select", tools.selTournament, tournsize=7)
 
 
 def init_stats():

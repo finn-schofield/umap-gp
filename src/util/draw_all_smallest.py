@@ -37,11 +37,11 @@ def get_immediate_subdirectories(a_dir):
 
 def main():
     simplest = pd.DataFrame()
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
-    pset = gp.PrimitiveSet("MAIN", 1000, prefix="f")
+    pset = gp.PrimitiveSet("MAIN", 1050, prefix="f")
     pset.context["array"] = np.array
-    init_primitives(pset)
+    init_primitives(pset, True)
 
     toolbox = base.Toolbox()
     init_toolbox(toolbox, pset, 100)
@@ -61,22 +61,22 @@ def main():
 
                 process_individual(dataset, run_type, index, pset)
 
-            row = df.loc[index].to_frame().transpose()
-            row.insert(0, 'run', "{}".format(fname))
-            row = row.drop(['base-sil', 'base-ari'], axis='columns')
+            # row = df.loc[index].to_frame().transpose()
+            # row.insert(0, 'run', "{}".format(fname))
+            # row = row.drop(['base-sil', 'base-ari'], axis='columns')
+            #
+            # row = row.rename(columns={'best-ari': 'ari', 'best-sil': 'sil', 'best-sil-pre': 'sil-pre'})
+            #
+            # summary = df.describe()
+            # row.insert(row.columns.get_loc('ari')+1, 'mean-ari', summary.at['mean', 'best-ari'])
+            # row.insert(row.columns.get_loc('sil')+1, 'mean-sil', summary.at['mean', 'best-sil'])
+            # row.insert(row.columns.get_loc('sil-pre')+1, 'mean-sil-pre', summary.at['mean', 'best-sil-pre'])
+            #
+            # simplest = pd.concat([simplest, row], axis=0)
 
-            row = row.rename(columns={'best-ari': 'ari', 'best-sil': 'sil', 'best-sil-pre': 'sil-pre'})
-
-            summary = df.describe()
-            row.insert(row.columns.get_loc('ari')+1, 'mean-ari', summary.at['mean', 'best-ari'])
-            row.insert(row.columns.get_loc('sil')+1, 'mean-sil', summary.at['mean', 'best-sil'])
-            row.insert(row.columns.get_loc('sil-pre')+1, 'mean-sil-pre', summary.at['mean', 'best-sil-pre'])
-
-            simplest = pd.concat([simplest, row], axis=0)
-
-    simplest = simplest.set_index('run')
-    summary_file = open("{}/simplest_summary.txt".format(OUTPUT_DIR), "w")
-    summary_file.write(str(simplest))
+    # simplest = simplest.set_index('run')
+    # summary_file = open("{}/simplest_summary.txt".format(OUTPUT_DIR), "w")
+    # summary_file.write(str(simplest))
 
 
 if __name__ == "__main__":
