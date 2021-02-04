@@ -361,11 +361,11 @@ def main():
     umap = UMAP(n_components=rd.n_dims, random_state=rd.seed).fit(rd.data)
     umap_time = time.time() - umap_time
 
-    if rd.measure == "nrmse":
-        global MAX_E
-        global MIN_E
-        MAX_E = np.amax(umap.embedding_.T, 1)
-        MIN_E = np.amin(umap.embedding_.T, 1)
+
+    global MAX_E
+    global MIN_E
+    MAX_E = np.amax(umap.embedding_.T, 1)
+    MIN_E = np.amin(umap.embedding_.T, 1)
 
 
     global v
