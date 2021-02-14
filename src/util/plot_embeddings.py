@@ -18,6 +18,7 @@ def plot_embedding(embedding, labels, output_fname):
 def plot_all_in_dir(dir, dataset, run_type):
     i = 1
     while os.path.isfile("{}/{}_emb.data" .format(dir, i)):
+        print("{} {}".format(dataset, run_type))
         data = read_data("{}/{}_emb.data" .format(dir, i))
         plot_embedding(data['data'], data['labels'], "{}/{}:{}_{}_emb.png" .format(OUTPUT_DIR, dataset, run_type, i))
         i += 1

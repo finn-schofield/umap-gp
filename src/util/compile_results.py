@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 import os
 import matplotlib.pyplot as plt
+import csv
 
 pd.set_option('display.width', 400)
 pd.set_option('display.max_columns', 10)
@@ -10,44 +11,65 @@ PLOT = False
 
 
 def main():
+    table_file = open("{}/table.csv".format(OUTPUT_DIR), 'w+')
+    table_file.write("method,dataset,mean\n")
+    for fitness in get_immediate_subdirectories(ROOT_DIR):
 
-    summary_file = open("{}/summary.txt".format(OUTPUT_DIR), "w+")
-    count = 0
+        current = os.path.join(ROOT_DIR, fitness)
 
-    for dataset in get_immediate_subdirectories(ROOT_DIR):
-        summary_file.write("{1} {0} {1}\n\n".format(dataset.upper(), ("=" * 5)))
-        dataset_dir = os.path.join(ROOT_DIR, dataset)
-        plot_data = dict()
+        summary_file = open("{}/{}-summary.txt".format(OUTPUT_DIR, fitness), "w+")
+        count = 0
 
-        for run_type in get_immediate_subdirectories(dataset_dir):
-            summary_file.write(run_type.upper()+"\n")
-            run_dir = os.path.join(dataset_dir, run_type)
-            fname = "{}:{}".format(dataset, run_type)
+        for dataset in get_immediate_subdirectories(current):
+            summary_file.write("{1} {0} {1}\n\n".format(dataset.upper(), ("=" * 5)))
+            dataset_dir = os.path.join(current, dataset)
+            plot_data = dict()
 
-            # only process run if csv does not yet exist
-            if os.path.isfile("{}/{}.csvf".format(OUTPUT_DIR, fname)):
-                print("{} already processed".format(fname))
-                stats = pd.read_csv("{}/{}.csv".format(OUTPUT_DIR, fname), index_col=0)
-            else:
+            for run_type in get_immediate_subdirectories(dataset_dir):
+                summary_file.write(run_type.upper()+"\n")
+                run_dir = os.path.join(dataset_dir, run_type)
+                fname = "{}:{}".format(dataset, run_type)
 
                 count += 1
                 stats = process_run(run_dir)
                 if stats is None:
                     continue
+
                 print("processed {}, {} runs".format(fname, len(stats)))
-                output_loc = "%s/%s" % (OUTPUT_DIR, fname)
+                output_loc = "%s/%s" % (current, fname)
+                for method in ['gp']:  # , 'umap']:
+                    table_file.write("{}{},{},{}\n".format(fitness, run_type, dataset,
+                                                                round(stats["{}-acc".format(method)].mean(), 3)))
                 stats.to_csv(output_loc + ".csv")
 
-            # now summarise the results
-            # plot_column(stats["total-nodes"].tolist(), 10, fname)
-            plot_data[run_type] = stats["total-nodes"].tolist()
-            pd.options.display.max_columns = 40
-            summary = stats.describe(include='all').drop("count", axis=0)
-            print(summary, file=summary_file)
-            print(file=summary_file)
-        if PLOT:
-            plot_graph(plot_data, dataset)
-    print("\n{} runs processed".format(count))
+                # now summarise the results
+                # plot_column(stats["total-nodes"].tolist(), 10, fname)
+                plot_data[run_type] = stats["total-nodes"].tolist()
+                pd.options.display.max_columns = 40
+
+                summary = stats.describe(include='all').drop("count", axis=0)
+                print(summary, file=summary_file)
+                print(file=summary_file)
+            if PLOT:
+                plot_graph(plot_data, dataset)
+        print("\n{} runs processed".format(count))
+    table_file.close()
+    table_file = pd.read_csv("{}/table.csv".format(OUTPUT_DIR))
+    print(table_file)
+    columns = sorted(set(table_file['dataset']))
+    ind = []
+    for dims in [1, 2, 3, 10]:
+        for method in ['umap_cost', 'nrmse', 'umap']:
+            ind.append("{}{}".format(method, dims))
+
+    df = pd.DataFrame('0', columns=columns, index=ind)
+
+    for _, row in table_file.iterrows():
+        df[row['dataset']][row['method']] = "{:.3f}".format(row['mean'])
+
+    print(df)
+    open("{}/table.txt".format(OUTPUT_DIR), 'w+').write(df.to_latex())
+
 
 
 def plot_graph(plots, dataset):
