@@ -40,6 +40,9 @@ def main():
                 for method in ['gp']:  # , 'umap']:
                     table_file.write("{}{},{},{}\n".format(fitness, run_type, dataset,
                                                                 round(stats["{}-acc".format(method)].mean(), 3)))
+                    table_file.write("umap{},{},{}\n".format(run_type, dataset,
+                                                           round(stats["umap-acc"].mean(), 3)))
+
                 stats.to_csv(output_loc + ".csv")
 
                 # now summarise the results
